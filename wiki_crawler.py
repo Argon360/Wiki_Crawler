@@ -972,18 +972,34 @@ def main():
         return
 
     try:
-        print(f" resolving {args.start} -> {args.target}...")
+        # Resolve start title
+        resolved_start = crawler.resolve_title(args.start)
+        if not resolved_start:
+            logger.info(f"Start '{args.start}' not found exactly; searching...")
+            resolved_start = crawler.search_title(args.start)
+            if not resolved_start:
+                raise ValueError(f"Could not find a Wikipedia page matching start: {args.start}")
+        
+        # Resolve target title
+        resolved_target = crawler.resolve_title(args.target)
+        if not resolved_target:
+            logger.info(f"Target '{args.target}' not found exactly; searching...")
+            resolved_target = crawler.search_title(args.target)
+            if not resolved_target:
+                raise ValueError(f"Could not find a Wikipedia page matching target: {args.target}")
+
+        print(f" resolving {resolved_start} -> {resolved_target}...")
         path = None
         t0 = time.time()
         
         if args.strategy == "bfs":
-            path = crawler.find_path_bfs(args.start, args.target, args.max_depth, args.max_visited)
+            path = crawler.find_path_bfs(resolved_start, resolved_target, args.max_depth, args.max_visited)
         elif args.strategy == "best":
-            path = crawler.find_path_best_first(args.start, args.target, args.max_depth, args.max_visited,
+            path = crawler.find_path_best_first(resolved_start, resolved_target, args.max_depth, args.max_visited,
                                                 args.max_branch, args.use_llm_hopping, args.llm_candidates,
                                                 args.llm_alpha, args.llm_enqueue_k)
         else:
-            path = crawler.find_path_bidi(args.start, args.target, args.max_depth, args.max_visited)
+            path = crawler.find_path_bidi(resolved_start, resolved_target, args.max_depth, args.max_visited)
             
         elapsed = time.time() - t0
         
